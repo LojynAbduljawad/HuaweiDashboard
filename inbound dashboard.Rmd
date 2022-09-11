@@ -1,0 +1,156 @@
+---
+title: "S6a Inbound Per Operator"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(highcharter)
+library(gt)
+library(htmltools)
+library(viridis)
+library(dplyr)
+library(lubridate)
+```
+
+```{r}
+getwd()
+setwd("~/Desktop")
+
+# call (tidyverse) library to read the csv file
+inbound <- read_csv("S6a Inbound Per Operator.csv" , show_col_types = FALSE ) 
+
+##sapply(inbound, function(x) sum(is.na(x)))
+inbound_omit <- na.omit(inbound)
+##sapply(inbound_omit, function(x) sum(is.na(x)))
+```
+Authentication Inbound Per Operator {data-orientation=rows}
+=======================================================================
+
+Column {.tabset .tabset-fade data-width=650}
+-----------------------------------------------------------------------
+### The Highest Authentication_Success_Rate {data-height=600}
+```{r}
+# Colors
+custom_colors <- viridis::mako(n = 15)
+
+# The Highest Authentication Success Rate in inbound per oPerator
+
+inbound_omit  %>% group_by(Short_name) %>% 
+  summarise(Authentication_Success_Rate = mean(Authentication_Success_Rate)) %>% 
+  arrange(desc(Authentication_Success_Rate)) %>% 
+  head(15) %>% 
+  hchart('column', hcaes(x = Short_name, y = Authentication_Success_Rate,color = custom_colors)) %>%   hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat = '<b>The Sum Of Success Rate : </b> {point.y} <br>') %>% 
+  hc_title(text = 'The Highest 15 Operator Authentication Success Rate',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>% 
+  hc_subtitle(text = 'From March to August',
+              style = list(fontSize = '16px')) %>% 
+  hc_credits(enabled = TRUE, text = '@miguelfzzz')
+  
+```
+
+### The Highest Location_Update_Success_Rate {data-height=600}
+
+```{r}
+# Colors
+custom_colors <- viridis::viridis(n = 15)
+
+# Most popular books by reviews
+inbound_omit  %>% group_by(Short_name) %>% 
+  summarise(Location_Update_Success_Rate = mean(Location_Update_Success_Rate)) %>%
+  arrange(desc(Location_Update_Success_Rate)) %>% 
+  head(15) %>% 
+  hchart('bar', hcaes(x = Short_name, y = Location_Update_Success_Rate, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat = '<b>Location Update Success Rate: </b> {point.y} <br>') %>% 
+  hc_title(text = 'The Highest Operator Location Update Success Rate',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>% 
+  hc_subtitle(text = 'From March to August',
+              style = list(fontSize = '16px')) %>% 
+  hc_credits(enabled = TRUE, text = '@miguelfzzz')
+```
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### {.no-padding data-height=350}
+
+```{r}
+# Colors
+custom_colors <- viridis::mako(n = 6)
+
+# Months 
+#str(inbound_omit$Date)
+inbound_omit$Datefilter <- strptime(inbound_omit$Date, format = "%d-%b-%Y")
+inbound_omit$monthfilter <- format(inbound_omit$Datefilter, "%b")
+
+# The Highest Authentication_Success_Rate by Month 
+inbound_omit %>% 
+  group_by(monthfilter) %>% 
+  summarise(Authentication_Success_Rate = mean(Authentication_Success_Rate)) %>% 
+  hchart('pie', hcaes(x = monthfilter, y = Authentication_Success_Rate, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat='<b>percentage: </b> {point.percentage:,.2f}%') %>% 
+  hc_title(text = 'The percentage of Authentication Success Rate per Months',
+           style = list(fontSize = '15px', fontWeight = 'bold')) %>% 
+  hc_credits(enabled = TRUE, text = '@miguelfzzz')
+
+```
+### {.no-padding data-height=350}
+
+```{r}
+# Colors
+custom_colors <- viridis::viridis(n = 6)
+
+# Months 
+#str(inbound_omit$Date)
+#inbound_omit$Datefilter <- strptime(inbound_omit$Date, format = "%d-%b-%Y")
+#inbound_omit$monthfilter <- format(inbound_omit$Datefilter, "%b")
+
+# The Highest Authentication_Success_Rate by Month 
+inbound_omit %>% 
+  group_by(monthfilter) %>% 
+  summarise(Location_Update_Success_Rate = mean(Location_Update_Success_Rate)) %>% 
+  hchart('pie', hcaes(x = monthfilter, y = Location_Update_Success_Rate, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat='<b>percentage: </b> {point.percentage:,.2f}%') %>% 
+  hc_title(text = 'The percentage of Location Update Success Rate per Months',
+           style = list(fontSize = '15px', fontWeight = 'bold')) %>% 
+  hc_credits(enabled = TRUE, text = '@miguelfzzz')
+
+```
+
+
+
+### {.no-padding data-height=350}
+
+```{r}
+# This is going to be a datatable
+inbound_omit1 <- inbound_omit %>% 
+  #filter(User_Rating >= 4.9) %>% 
+  arrange(desc(Location_Update_Success_Rate)) %>% 
+  head(200) %>% 
+  select(Short_name, Location_Update_Success_Rate)
+
+# HTML table
+div(style = 'height:600px; overflow-y:scroll', gt(inbound_omit1) %>% 
+      tab_header(title = md('The Highest Operator Location Update Success Rate'),
+                 subtitle = md('Top 200')) %>% 
+      opt_table_font(font = list(google_font('Chivo'), default_fonts())) %>% 
+      tab_style(location = cells_column_labels(columns = everything()),
+                style = list(cell_borders(sides = 'bottom', 
+                                          weight = px(2)), 
+                             cell_text(weight = 'bold'))) %>% 
+      tab_options(table.font.size = px(12L),
+                  table.border.top.style = 'none',
+                  column_labels.border.bottom.width = 2,
+                  table_body.border.top.style = 'none',
+                  data_row.padding = px(3))
+    )
+
+```
+
